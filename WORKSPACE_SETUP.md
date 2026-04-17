@@ -27,6 +27,7 @@ Containerization/
 │   └── repo-creds.yaml            # Registry credentials
 ├── config/                         # Configuration
 │   ├── tools/trace32.yaml         # Trace32 config
+│   ├── tools/canoe.yaml           # CANoe config
 │   ├── environments/              # Env configs
 │   └── utils.py                   # Config utilities
 ├── database/                       # Data persistence
@@ -35,6 +36,8 @@ Containerization/
 ├── templates/                      # Dockerfile templates
 │   ├── trace32_windows.dockerfile
 │   ├── trace32_linux.dockerfile
+│   ├── canoe_windows.dockerfile
+│   ├── canoe_linux.dockerfile
 │   └── automotive_base.dockerfile
 ├── scripts/                        # Utility scripts
 │   ├── init_db.py                 # Database init
@@ -81,7 +84,11 @@ python scripts/init_db.py
 
 ### 3. Build First Image
 ```bash
+# Build Trace32
 python -m agent.cli build --tool trace32 --os windows
+
+# Or build CANoe
+python -m agent.cli build --tool canoe --os linux
 ```
 
 ### 4. Check Status
@@ -113,8 +120,11 @@ python -m agent.cli images
 ## Build Your First Container
 
 ```bash
-# CLI method
+# Build Trace32 using CLI
 python -m agent.cli build --tool trace32 --os windows --registry myregistry.com
+
+# Build CANoe using CLI
+python -m agent.cli build --tool canoe --os linux --registry myregistry.com
 
 # REST API method
 curl -X POST http://localhost:8080/api/builds \

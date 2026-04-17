@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive platform for building, deploying, and managing scalable Docker containers using an intelligent agent system. Designed for Automotive development tools like **Trace32 (Lauterbach)**, with extensibility for other tools.
+This is a comprehensive platform for building, deploying, and managing scalable Docker containers using an intelligent agent system. Designed for Automotive development tools like **Trace32 (Lauterbach)** and **CANoe (Vector)**, with extensibility for other tools.
 
 ### Key Features
 

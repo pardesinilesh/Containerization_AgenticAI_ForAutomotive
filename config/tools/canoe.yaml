@@ -1,0 +1,76 @@
+name: canoe
+display_name: "CANoe (Vector)"
+version: "1.0.0"
+vendor: vector
+description: "Professional CAN network analysis and simulation tool for automotive development"
+
+supported_os:
+  - windows
+  - linux
+
+docker:
+  base_images:
+    windows: "mcr.microsoft.com/windows/servercore:ltsc2022"
+    linux: "ubuntu:22.04"
+  
+  ports:
+    - 5432
+    - 8080
+    - 8443
+  
+  volumes:
+    - /app/canoe/data
+    - /app/canoe/config
+    - /app/canoe/logs
+    - /app/canoe/projects
+
+resources:
+  cpu:
+    request: "1500m"
+    limit: "3000m"
+  memory:
+    request: "2Gi"
+    limit: "4Gi"
+
+features:
+  can_simulation: true
+  network_analysis: true
+  remote_access: true
+  project_management: true
+  license_support: true
+  multi_session: true
+
+environment_variables:
+  CANOE_PORT: "5432"
+  CANOE_DEBUG: "0"
+  CANOE_HOME: "/app/canoe"
+  CANOE_CONFIG_PATH: "/app/canoe/config"
+  CANOE_DATA_PATH: "/app/canoe/data"
+
+dependencies:
+  windows:
+    - git
+    - visualstudio2022community
+    - dotnet-sdk
+    - python310
+    - mingw
+  linux:
+    - build-essential
+    - python3-dev
+    - git
+    - curl
+    - libpq-dev
+
+health_check:
+  enabled: true
+  interval: "30s"
+  timeout: "10s"
+  retries: 3
+
+capabilities:
+  can_analysis: true
+  lin_analysis: true
+  flexray_analysis: true
+  most_analysis: true
+  ethernet_analysis: true
+  diagnostics: true

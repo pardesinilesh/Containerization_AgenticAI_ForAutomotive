@@ -1,0 +1,126 @@
+@startuml data_model
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+
+title Data Model - PostgreSQL Schema
+
+entity "build_jobs" {
+  *id : UUID <<PK>>
+  --
+  tool : VARCHAR(255)
+  os : VARCHAR(50)
+  version : VARCHAR(100)
+  status : VARCHAR(50)
+  image_id : VARCHAR(500)
+  error : TEXT
+  metadata : JSONB
+  --
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "deployments" {
+  *id : UUID <<PK>>
+  --
+  image_id : VARCHAR(500)
+  env : VARCHAR(50)
+  replicas : INTEGER
+  status : VARCHAR(50)
+  error : TEXT
+  metadata : JSONB
+  --
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "tool_configs" {
+  *id : UUID <<PK>>
+  --
+  tool : VARCHAR(255) <<UNIQUE>>
+  config : JSONB
+  --
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "image_registry" {
+  *id : UUID <<PK>>
+  --
+  image_id : VARCHAR(500) <<UNIQUE>>
+  tool : VARCHAR(255)
+  os : VARCHAR(50)
+  version : VARCHAR(100)
+  size_bytes : BIGINT
+  registry_url : VARCHAR(500)
+  push_status : VARCHAR(50)
+  --
+  created_at : TIMESTAMP
+}
+
+entity "sync_logs" {
+  *id : UUID <<PK>>
+  --
+  deployment_id : UUID <<FK>>
+  sync_type : VARCHAR(50)
+  status : VARCHAR(50)
+  message : TEXT
+  manifest_applied : JSONB
+  --
+  created_at : TIMESTAMP
+}
+
+entity "activity_logs" {
+  *id : UUID <<PK>>
+  --
+  action_type : VARCHAR(100)
+  resource_type : VARCHAR(50)
+  resource_id : UUID
+  user_id : VARCHAR(50)
+  details : JSONB
+  --
+  created_at : TIMESTAMP
+}
+
+' Relationships
+build_jobs ||--o{ image_registry : "produces"
+deployments }o--|| image_registry : "uses"
+deployments ||--o{ sync_logs : "generates"
+tool_configs ||--o{ build_jobs : "configures"
+
+note right of build_jobs
+  Tracks all build operations
+  Status: pending, planning,
+  dockerfile_generated,
+  building, completed, 
+  pushed, failed, deleted
+end note
+
+note right of deployments
+  Tracks all deployments
+  Status: pending, manifest_ready,
+  deploying, deployed,
+  failed, deleted
+end note
+
+note right of image_registry
+  Registry of all built images
+  Available for deployment
+end note
+
+note right of sync_logs
+  Argo CD synchronization log
+  Tracks when/how manifests
+  were applied to cluster
+end note
+
+note right of activity_logs
+  Complete audit trail
+  All system actions logged
+end note
+
+note right of tool_configs
+  Cached tool configurations
+  Loaded from config/tools/
+end note
+
+@enduml

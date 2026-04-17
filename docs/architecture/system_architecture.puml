@@ -1,0 +1,171 @@
+@startuml system_architecture
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+
+title Agentic AI Containerization Platform - System Architecture
+
+package "User Interface Layer" {
+    component "CLI\n(Click)" as CLI
+    component "REST API\n(FastAPI)" as API
+    component "Argo CD UI\n(Web)" as ArgoUI
+}
+
+package "Orchestration Layer" {
+    component "Container\nOrchestrator" as Orchestrator {
+        component "Build Engine" as BuildEngine
+        component "Deploy Engine" as DeployEngine
+        component "State Manager" as StateManager
+    }
+    
+    component "LLM Interface" {
+        component "Claude/GPT\nIntegration" as LLMClient
+    }
+}
+
+package "Building Layer" {
+    component "Dockerfile\nGenerator" as DFGenerator {
+        component "Template\nEngine" as TemplateEngine
+        component "Optimizer" as Optimizer
+    }
+    
+    component "Image Builder" as ImageBuilder {
+        component "Docker\nClient" as DockerClient
+        component "Registry\nPush" as RegistryPush
+    }
+}
+
+package "Kubernetes & Deployment" {
+    component "K8s\nManifests" as K8sManifests {
+        component "Deployment" as K8sDeploy
+        component "Service" as K8sService
+        component "ConfigMap" as K8sConfigMap
+        component "PVC" as K8sPVC
+    }
+    
+    component "Argo CD\nIntegration" as ArgoCD {
+        component "Application\nCRD" as ArgoCRD
+        component "Sync\nController" as ArgoSync
+    }
+}
+
+package "Data Layer" {
+    database "PostgreSQL\nDatabase" as PostgreSQL {
+        component "build_jobs" as BuildJobsTable
+        component "deployments" as DeployTable
+        component "tool_configs" as ConfigTable
+        component "image_registry" as ImageRegTable
+        component "sync_logs" as SyncLogsTable
+    }
+}
+
+package "Registry & Storage" {
+    component "Container\nRegistry" as Registry
+    component "Docker\nImages" as DockerImages
+}
+
+package "Kubernetes Cluster" {
+    component "automotive-tools\nNamespace" as K8sNS {
+        component "Pod:\nTrace32" as Pod1
+        component "Pod:\nTrace32" as Pod2
+        component "Pod:\nTrace32" as Pod3
+    }
+}
+
+package "Configuration" {
+    component "Tool\nConfigs" as ToolConfigs {
+        component "trace32.yaml" as Trace32Config
+        component "generic_tool.yaml" as GenericConfig
+    }
+    
+    component "Environment\nConfigs" as EnvConfigs {
+        component "dev.yaml" as DevConfig
+        component "staging.yaml" as StagingConfig
+        component "production.yaml" as ProdConfig
+    }
+}
+
+package "Template Library" {
+    component "Dockerfile\nTemplates" as Templates {
+        component "trace32_windows" as Trace32Win
+        component "trace32_linux" as Trace32Linux
+        component "automotive_base" as AutomBase
+    }
+}
+
+' Connections from UI to Orchestrator
+CLI --> Orchestrator : send requests
+API --> Orchestrator : dispatch
+ArgoUI --> ArgoCD : monitor
+
+' Orchestrator to LLM
+Orchestrator --> LLMClient : generate plans
+
+' Orchestrator to Builders
+BuildEngine --> DFGenerator : generate dockerfile
+BuildEngine --> ImageBuilder : build image
+
+' DFGenerator internals
+DFGenerator --> TemplateEngine : load templates
+TemplateEngine --> Templates : fetch template
+DFGenerator --> Optimizer : optimize config
+
+' ImageBuilder internals
+ImageBuilder --> DockerClient : docker build
+ImageBuilder --> RegistryPush : push to registry
+
+' Registry and Images
+DockerClient --> DockerImages : creates
+RegistryPush --> Registry : uploads
+
+' DeployEngine
+DeployEngine --> K8sManifests : generates
+DeployEngine --> ArgoCD : syncs
+K8sManifests --> K8sDeploy : defines
+K8sManifests --> K8sService : defines
+K8sManifests --> K8sConfigMap : defines
+K8sManifests --> K8sPVC : defines
+
+' ArgoCD
+ArgoCRD --> K8sNS : deploys
+ArgoSync --> K8sNS : maintains
+Registry --> Pod1 : pulls image
+Registry --> Pod2 : pulls image
+Registry --> Pod3 : pulls image
+
+' State Management
+StateManager --> PostgreSQL : persist state
+BuildEngine --> StateManager : update status
+DeployEngine --> StateManager : update status
+ArgoSync --> SyncLogsTable : log sync
+
+' Configuration
+ToolConfigs --> Orchestrator : load config
+EnvConfigs --> Orchestrator : load config
+ToolConfigs --> Templates : customize templates
+EnvConfigs --> K8sManifests : configure deployment
+
+note right of Orchestrator
+  **Intelligence Hub**
+  - LLM-powered decisions
+  - Multi-step workflows
+  - Error handling
+  - Job scheduling
+end note
+
+note right of PostgreSQL
+  **Audit Trail**
+  - Complete history
+  - Build artifacts
+  - Deployment records
+  - Sync events
+end note
+
+note right of K8sNS
+  **Runtime**
+  - Container execution
+  - Auto-scaling
+  - Health checks
+  - Resource management
+end note
+
+@enduml

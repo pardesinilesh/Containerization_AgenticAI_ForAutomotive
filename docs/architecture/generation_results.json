@@ -1,0 +1,13 @@
+{
+  "total_files": 6,
+  "generated": 0,
+  "failed": 12,
+  "diagrams": {
+    "build_flow.puml": {},
+    "component_interaction.puml": {},
+    "data_model.puml": {},
+    "deployment_flow.puml": {},
+    "kubernetes_architecture.puml": {},
+    "system_architecture.puml": {}
+  }
+}

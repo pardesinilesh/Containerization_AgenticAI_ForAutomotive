@@ -1,0 +1,118 @@
+@startuml component_interaction
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+skinparam backgroundColor #ffffff
+
+title Component Interaction Diagram
+
+package "Presentation Layer" {
+    component "CLI Interface" as CLI {
+        component "build cmd" as CLIBuild
+        component "deploy cmd" as CLIDeploy
+        component "status cmd" as CLIStatus
+    }
+    
+    component "REST API" as RestAPI {
+        component "POST /builds" as APIBuild
+        component "POST /deployments" as APIDeploy
+        component "GET /images" as APIImages
+    }
+}
+
+package "Business Logic Layer" {
+    component "Orchestrator" as Orchestrator {
+        component "build_image()" as OrcBuild
+        component "deploy_image()" as OrcDeploy
+        component "get_status()" as OrcStatus
+    }
+    
+    component "LLM Interface" as LLMInt {
+        component "generate_build_plan()" as LLMBuild
+        component "generate_deployment_manifest()" as LLMDeploy
+        component "suggest_optimizations()" as LLMOpt
+    }
+}
+
+package "Infrastructure Layer" {
+    component "Builders" as Builders {
+        component "DockerfileGenerator" as DFGen
+        component "ImageBuilder" as ImgBuilder
+    }
+    
+    component "Kubernetes" as K8sLayer {
+        component "Manifest Generator" as ManifestGen
+        component "Argo CD Controller" as ArgoController
+    }
+}
+
+package "Persistence Layer" {
+    database "PostgreSQL" as DB {
+        component "BuildJob Table" as BJTable
+        component "Deployment Table" as DTable
+        component "Config Table" as CTable
+    }
+}
+
+package "External Services" {
+    component "LLM Provider" as LLMProvider {
+        component "Claude API" as Claude
+        component "OpenAI API" as OpenAI
+    }
+    
+    component "Container Registry" as ContReg
+    component "Kubernetes Cluster" as K8sCluster
+}
+
+package "Configuration" {
+    component "Tool Configs\n(YAML)" as ToolCfg
+    component "Environment Configs\n(YAML)" as EnvCfg
+    component "Dockerfile Templates\n(Jinja2)" as Templates
+}
+
+' Connections from Presentation to Business Logic
+CLI --> Orchestrator : direct calls
+RestAPI --> Orchestrator : dispatches
+CLIBuild --> OrcBuild
+CLIDeploy --> OrcDeploy
+APIBuild --> OrcBuild
+APIDeploy --> OrcDeploy
+
+' Orchestrator to LLM Interface
+OrcBuild --> LLMBuild : plan_generation
+OrcDeploy --> LLMDeploy : manifest_generation
+
+' LLM Interface to External
+LLMBuild --> Claude : API call
+LLMDeploy --> OpenAI : API call
+LLMOpt --> Claude : optimization
+
+' Orchestrator to Builders
+OrcBuild --> DFGen : generate dockerfile
+OrcBuild --> ImgBuilder : build & push
+DFGen --> Templates : load template
+ImgBuilder --> ContReg : push image
+
+' Orchestrator to K8s Layer
+OrcDeploy --> ManifestGen : generate manifest
+OrcDeploy --> ArgoController : deploy
+
+' K8s to External
+ManifestGen --> K8sCluster : kubectl apply
+ArgoController --> K8sCluster : sync
+
+' All to Database
+Orchestrator --> DB : persist state
+LLMInt --> DB : log operations
+Builders --> DB : track builds
+K8sLayer --> DB : track deployments
+
+' Configuration loading
+Orchestrator ..> ToolCfg : load
+Orchestrator ..> EnvCfg : load
+DFGen ..> Templates : load
+ManifestGen ..> EnvCfg : load
+
+' External Service Connections
+ContReg <--> K8sCluster : pull images
+
+@enduml

@@ -1,0 +1,24 @@
+environment: development
+
+kubernetes:
+  cluster: "local"
+  namespace: "automotive-tools-dev"
+  replicas: 1
+
+registry:
+  endpoint: "localhost:5000"
+  auth: false
+
+database:
+  url: "postgresql://postgres:postgres@localhost:5432/automotive_dev"
+  pool_size: 5
+
+logging:
+  level: DEBUG
+  format: "json"
+
+features:
+  debug_mode: true
+  telemetry: false
+  auto_build: true
+  local_registry: true

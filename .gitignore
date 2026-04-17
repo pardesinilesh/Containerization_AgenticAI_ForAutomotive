@@ -1,0 +1,54 @@
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database/*.sql
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+.gitignore_global
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+/manifest/
+
+# Config with secrets
+config/**/*.local.yaml
+config/**/*.secret.yaml

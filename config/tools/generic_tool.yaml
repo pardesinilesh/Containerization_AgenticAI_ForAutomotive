@@ -1,0 +1,35 @@
+name: "{{ tool_name }}"
+version: "{{ tool_version }}"
+description: "Generic automotive development tool template"
+
+supported_os:
+  - windows
+  - linux
+
+docker:
+  base_images:
+    windows: "mcr.microsoft.com/windows/servercore:ltsc2022"
+    linux: "ubuntu:22.04"
+  
+  ports: []
+  volumes: []
+
+resources:
+  cpu:
+    request: "500m"
+    limit: "1000m"
+  memory:
+    request: "1Gi"
+    limit: "2Gi"
+
+environment_variables: {}
+
+dependencies:
+  windows: []
+  linux: []
+
+health_check:
+  enabled: false
+  interval: "30s"
+  timeout: "10s"
+  retries: 3

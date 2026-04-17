@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: automotive-{{ tool }}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/automotive-containers
+    targetRevision: main
+    path: manifests/{{ tool }}
+    helm:
+      values: |
+        tool: {{ tool }}
+        version: {{ version }}
+        environment: {{ environment | default('production') }}
+        replicas: {{ replicas | default(3) }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: automotive-tools
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

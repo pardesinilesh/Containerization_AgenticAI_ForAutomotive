@@ -1,0 +1,144 @@
+@startuml kubernetes_architecture
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+skinparam backgroundColor #ffffff
+
+title Kubernetes Architecture - automotive-tools Namespace
+
+package "Kubernetes Cluster" {
+    package "automotive-tools Namespace" {
+        package "Deployments" {
+            component "automotive-trace32" as Deployment1 {
+                component "POD 1\n(trace32)" as Pod1
+                component "POD 2\n(trace32)" as Pod2
+                component "POD 3\n(trace32)" as Pod3
+            }
+        }
+        
+        package "Services" {
+            component "automotive-trace32-service\n(ClusterIP:8080)" as Service1
+        }
+        
+        package "Storage" {
+            component "automotive-trace32-pvc\n(10Gi RWO)" as PVC1
+        }
+        
+        package "Configuration" {
+            component "automotive-trace32-config\n(ConfigMap)" as ConfigMap1 {
+                component "config.yaml" as CfgFile
+                component "env vars" as EnvVars
+            }
+            
+            component "app-secrets\n(Secret)" as Secrets
+        }
+        
+        package "Argo CD" {
+            component "Application CRD:\nautomotive-trace32" as ArgoCRD
+            component "ApplicationController" as ArgoController
+            component "Repository Server" as RepoServer
+        }
+    }
+    
+    package "argocd Namespace" {
+        component "argocd-server" as ArgoCDServer
+        component "argocd-repo-server" as ArgoCDRepo
+        component "argocd-controller" as ArgoCDCtrl
+    }
+}
+
+package "External Components" {
+    component "Container Registry\n(Docker Hub/ACR/Private)" as Registry
+    component "Git Repository\n(Config Source)" as GitRepo
+    component "PostgreSQL\n(State)" as DB
+}
+
+package "Client Tools" {
+    component "kubectl" as KubectlTool
+    component "argocd CLI" as ArgoCDCLI
+    component "Helm (optional)" as HelmTool
+}
+
+' Pod to Service
+Pod1 -.-> Service1 : exposes port 8080
+Pod2 -.-> Service1 : exposes port 8080
+Pod3 -.-> Service1 : exposes port 8080
+
+' Pods use ConfigMap and Secrets
+Pod1 -.-> ConfigMap1 : mount config
+Pod2 -.-> ConfigMap1 : mount config
+Pod3 -.-> ConfigMap1 : mount config
+
+Pod1 -.-> Secrets : environment vars
+Pod2 -.-> Secrets : environment vars
+Pod3 -.-> Secrets : environment vars
+
+' Pods use Storage
+Pod1 -.-> PVC1 : mount volume
+Pod2 -.-> PVC1 : mount volume
+Pod3 -.-> PVC1 : mount volume
+
+' Argo CD CRD
+ArgoCRD -.-> Deployment1 : defines deployment
+ArgoCRD -.-> Service1 : defines service
+ArgoCRD -.-> ConfigMap1 : defines config
+
+' Argo CD Controllers
+ArgoController --> ArgoCRD : watches/manages
+ArgoController --> Deployment1 : applies
+RepoServer --> GitRepo : fetches manifests
+
+' Argo CD Server Integration
+ArgoCDServer --> ArgoCDCtrl : UI management
+ArgoCDCtrl --> ArgoController : orchestrates
+
+' Pull Images from Registry
+Pod1 --> Registry : pull image:latest
+Pod2 --> Registry : pull image:latest
+Pod3 --> Registry : pull image:latest
+
+' Clients to K8s
+KubectlTool --> Service1 : query/update
+ArgoCDCLI --> ArgoCRD : manage apps
+
+' Data Persistence
+Pod1 .. DB : logs build state
+Pod2 .. DB : logs build state
+Pod3 .. DB : logs build state
+
+' ConfigMap Details
+CfgFile : tool: trace32
+CfgFile : version: 1.0.0
+CfgFile : environment: prod
+
+note right of Pod1
+  Container running
+  trace32 application
+  
+  Restart Policy: Always
+  Health Checks: Enabled
+  Resource Limits: Set
+end note
+
+note right of Service1
+  Internal Service
+  Provides DNS:
+  automotive-trace32-service
+  .automotive-tools.svc
+  .cluster.local:8080
+end note
+
+note right of ArgoCRD
+  Declarative deployment
+  Auto-sync enabled
+  Prune: true
+  Self-Heal: true
+end note
+
+note right of PVC1
+  Persistent Volume Claim
+  AccessMode: ReadWriteOnce
+  Storage: 10Gi
+  Mount: /app/trace32/data
+end note
+
+@enduml

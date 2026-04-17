@@ -1,0 +1,27 @@
+environment: staging
+
+kubernetes:
+  cluster: "staging-cluster"
+  namespace: "automotive-tools-staging"
+  replicas: 2
+
+registry:
+  endpoint: "staging-registry.company.com"
+  auth: true
+  username: "{{ REGISTRY_USER }}"
+  password: "{{ REGISTRY_PASSWORD }}"
+
+database:
+  url: "postgresql://user:pass@staging-db:5432/automotive"
+  pool_size: 10
+  ssl_mode: "require"
+
+logging:
+  level: INFO
+  format: "json"
+
+features:
+  debug_mode: false
+  telemetry: true
+  auto_build: true
+  local_registry: false

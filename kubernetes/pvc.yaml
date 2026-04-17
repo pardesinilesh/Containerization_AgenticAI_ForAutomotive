@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ tool }}-pvc
+  namespace: {{ namespace | default('automotive-tools') }}
+  labels:
+    app: {{ tool }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: {{ storage | default('10Gi') }}

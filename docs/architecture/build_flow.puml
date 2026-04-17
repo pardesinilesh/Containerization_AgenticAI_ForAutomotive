@@ -1,0 +1,71 @@
+@startuml build_flow
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+skinparam backgroundColor #ffffff
+
+title Build Workflow - From Request to Image in Registry
+
+actor User
+participant "CLI/API" as Interface
+participant "Orchestrator" as Orch
+participant "LLM" as LLM
+participant "State Manager" as State
+participant "Dockerfile Generator" as DFGen
+participant "Image Builder" as ImgBuilder
+participant "Registry" as Reg
+
+User -> Interface: build --tool trace32 --os windows
+Interface -> Orch: build_image(tool, os, version)
+
+Orch -> State: create_build_job(pending)
+State --> Orch: job_id
+
+Orch -> LLM: generate_build_plan(tool, os, version)
+LLM --> Orch: build_plan\n(base_image, dependencies,\nenv_vars, ports)
+
+Orch -> State: update_build_job(planning)
+
+Orch -> DFGen: generate(tool, os, version, plan)
+DFGen -> DFGen: load_or_create_template
+DFGen -> DFGen: render_with_plan
+DFGen --> Orch: dockerfile_content
+
+Orch -> State: update_build_job(dockerfile_generated)
+
+Orch -> ImgBuilder: build(\n  dockerfile,\n  tool,\n  os,\n  version\n)
+
+ImgBuilder -> ImgBuilder: create_temp_dockerfile
+ImgBuilder -> ImgBuilder: docker build -t image:tag .
+ImgBuilder --> Orch: image_id
+
+Orch -> State: update_build_job(completed, image_id)
+
+Orch -> ImgBuilder: push(image_id, registry)
+ImgBuilder -> ImgBuilder: docker tag image registry/image
+ImgBuilder -> Reg: docker push
+Reg --> ImgBuilder: success
+
+Orch -> State: update_build_job(pushed)
+
+Orch --> Interface: {\n  "success": true,\n  "build_id": "...",\n  "image_id": "automotive-trace32:windows"\n}
+
+Interface --> User: ✓ Build successful!
+
+note left of LLM
+  LLM generates intelligent
+  build configuration
+  considering tool requirements
+end note
+
+note right of State
+  All build states are
+  tracked for audit trail
+  and status queries
+end note
+
+note right of ImgBuilder
+  Supports both Docker SDK
+  and CLI fallback
+end note
+
+@enduml

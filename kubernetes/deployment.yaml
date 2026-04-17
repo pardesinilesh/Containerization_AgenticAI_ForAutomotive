@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ tool }}-deployment
+  namespace: {{ namespace | default('automotive-tools') }}
+  labels:
+    app: {{ tool }}
+    version: {{ version }}
+spec:
+  replicas: {{ replicas | default(3) }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ tool }}
+  template:
+    metadata:
+      labels:
+        app: {{ tool }}
+        version: {{ version }}
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        fsGroup: 1000
+      containers:
+      - name: {{ tool }}
+        image: {{ image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: debug
+          containerPort: 2000
+          protocol: TCP
+        env:
+        - name: TOOL_NAME
+          value: "{{ tool }}"
+        - name: TOOL_VERSION
+          value: "{{ version }}"
+        - name: ENVIRONMENT
+          value: "{{ environment | default('production') }}"
+        resources:
+          requests:
+            cpu: "{{ cpu_request | default('1000m') }}"
+            memory: "{{ memory_request | default('2Gi') }}"
+          limits:
+            cpu: "{{ cpu_limit | default('2000m') }}"
+            memory: "{{ memory_limit | default('4Gi') }}"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        volumeMounts:
+        - name: data
+          mountPath: /app/{{ tool }}/data
+        - name: config
+          mountPath: /app/{{ tool }}/config
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ tool }}-pvc
+      - name: config
+        configMap:
+          name: {{ tool }}-config
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ tool }}
+              topologyKey: kubernetes.io/hostname

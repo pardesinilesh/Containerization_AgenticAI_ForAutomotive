@@ -1,0 +1,67 @@
+name: trace32
+display_name: "Trace32 (Lauterbach)"
+version: "1.0.0"
+vendor: lauterbach
+description: "Professional debugging and trace tool for embedded systems"
+
+supported_os:
+  - windows
+  - linux
+
+docker:
+  base_images:
+    windows: "mcr.microsoft.com/windows/servercore:ltsc2022"
+    linux: "ubuntu:22.04"
+  
+  ports:
+    - 2000
+    - 2001
+    - 2002
+  
+  volumes:
+    - /app/trace32/data
+    - /app/trace32/config
+    - /app/trace32/logs
+
+resources:
+  cpu:
+    request: "1000m"
+    limit: "2000m"
+  memory:
+    request: "2Gi"
+    limit: "4Gi"
+
+features:
+  network_debugging: true
+  remote_access: true
+  license_support: true
+  multi_session: true
+
+environment_variables:
+  TRACE32_PORT: "2000"
+  TRACE32_DEBUG: "0"
+  TRACE32_HOME: "/app/trace32"
+
+dependencies:
+  windows:
+    - git
+    - visualstudio2022community
+    - dotnet-sdk
+  linux:
+    - build-essential
+    - git
+    - gdb
+    - python3
+    - libssl-dev
+
+health_check:
+  enabled: true
+  endpoint: "/health"
+  interval: "30s"
+  timeout: "10s"
+  retries: 3
+
+licensing:
+  required: true
+  license_path: "/app/trace32/config/license"
+  license_env_var: "TRACE32_LICENSE"

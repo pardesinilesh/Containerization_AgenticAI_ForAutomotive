@@ -1,0 +1,94 @@
+{
+  "system_architecture.puml": {
+    "title": "System Architecture",
+    "description": "Complete architecture showing all components and their relationships",
+    "scope": [
+      "Architects",
+      "Senior Developers",
+      "Tech Leads"
+    ],
+    "components": [
+      "UI Layer",
+      "Orchestration",
+      "Building",
+      "Kubernetes",
+      "Database",
+      "Registry",
+      "Config"
+    ]
+  },
+  "build_flow.puml": {
+    "title": "Build Workflow",
+    "description": "Step-by-step build process from request to image in registry",
+    "scope": [
+      "Developers",
+      "DevOps Engineers"
+    ],
+    "components": [
+      "CLI/API",
+      "Orchestrator",
+      "LLM",
+      "Dockerfile Generator",
+      "Image Builder",
+      "Registry"
+    ]
+  },
+  "deployment_flow.puml": {
+    "title": "Deployment Workflow",
+    "description": "Deployment process from image to Kubernetes cluster",
+    "scope": [
+      "DevOps Engineers",
+      "SREs"
+    ],
+    "components": [
+      "Orchestrator",
+      "K8s Manifests",
+      "Argo CD",
+      "Kubernetes",
+      "Database"
+    ]
+  },
+  "component_interaction.puml": {
+    "title": "Component Interaction",
+    "description": "Detailed component relationships and data flow",
+    "scope": [
+      "Engineers",
+      "Architects"
+    ],
+    "components": [
+      "All components with communication flows"
+    ]
+  },
+  "data_model.puml": {
+    "title": "Database Schema",
+    "description": "PostgreSQL database structure and relationships",
+    "scope": [
+      "Backend Developers",
+      "DBAs"
+    ],
+    "components": [
+      "build_jobs",
+      "deployments",
+      "tool_configs",
+      "image_registry",
+      "sync_logs",
+      "activity_logs"
+    ]
+  },
+  "kubernetes_architecture.puml": {
+    "title": "Kubernetes Architecture",
+    "description": "K8s cluster setup for the automotive-tools namespace",
+    "scope": [
+      "DevOps Engineers",
+      "Kubernetes Specialists"
+    ],
+    "components": [
+      "Deployments",
+      "Services",
+      "Storage",
+      "ConfigMaps",
+      "Argo CD",
+      "Namespaces"
+    ]
+  }
+}

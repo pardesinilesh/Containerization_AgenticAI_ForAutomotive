@@ -1,0 +1,34 @@
+environment: production
+
+kubernetes:
+  cluster: "prod-cluster"
+  namespace: "automotive-tools"
+  replicas: 5
+
+registry:
+  endpoint: "registry.company.com"
+  auth: true
+  username: "{{ REGISTRY_USER }}"
+  password: "{{ REGISTRY_PASSWORD }}"
+
+database:
+  url: "postgresql://{{ DB_USER }}:{{ DB_PASSWORD }}@prod-db:5432/automotive"
+  pool_size: 20
+  ssl_mode: "require"
+  backup_enabled: true
+
+logging:
+  level: WARNING
+  format: "json"
+
+features:
+  debug_mode: false
+  telemetry: true
+  auto_build: false
+  local_registry: false
+
+security:
+  network_policies: true
+  pod_security_policy: true
+  rbac_enabled: true
+  tls_required: true

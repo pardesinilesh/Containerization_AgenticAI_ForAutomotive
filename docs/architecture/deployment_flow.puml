@@ -1,0 +1,69 @@
+@startuml deployment_flow
+!define AWSPUML https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v14.0/dist
+skinparam linetype ortho
+skinparam backgroundColor #ffffff
+
+title Deployment Workflow - From Image to Kubernetes
+
+actor User
+participant "CLI/API" as Interface
+participant "Orchestrator" as Orch
+participant "LLM" as LLM
+participant "State Manager" as State
+participant "K8s Manifests" as K8sMani
+participant "Argo CD" as ArgoCDSys
+participant "Kubernetes" as K8s
+
+User -> Interface: deploy --image automotive-trace32:latest
+Interface -> Orch: deploy_image(image_id, replicas, env)
+
+Orch -> State: create_deployment(pending)
+State --> Orch: deployment_id
+
+Orch -> LLM: generate_deployment_manifest(\n  image_id, replicas, env, namespace\n)
+LLM --> Orch: manifest_dict\n(deployment, service,\nresources, health_checks)
+
+Orch -> State: update_deployment(manifest_ready)
+
+Orch -> K8sMani: apply_manifest(manifest)
+K8sMani -> K8sMani: render_yaml
+K8sMani -> K8s: kubectl apply -f manifest.yaml
+K8s --> K8sMani: resources_created
+
+Orch -> State: update_deployment(deploying)
+
+Orch -> ArgoCDSys: sync_application(\n  app_name,\n  manifest\n)
+
+ArgoCDSys -> ArgoCDSys: create/update\nApplication CRD
+ArgoCDSys -> K8s: auto-sync deployment
+K8s -> K8s: pull_image_from_registry
+K8s -> K8s: create_pods
+K8s -> K8s: health_checks
+
+Orch -> State: update_deployment(deployed)
+
+ArgoCDSys --> Orch: sync_status
+
+note right of ArgoCDSys
+  Argo CD watches repository
+  and automatically syncs
+  any configuration changes
+end note
+
+note right of K8s
+  Kubernetes manages:
+  - Pod lifecycle
+  - Rolling updates
+  - Health checks
+  - Resource limits
+  - Auto-scaling (if HPA)
+end note
+
+Orch --> Interface: {\n  "success": true,\n  "deployment_id": "...",\n  "status": "deployed"\n}
+
+Interface --> User: ✓ Deployment successful!
+
+User -> K8s: kubectl get pods -n automotive-tools
+K8s --> User: POD_NAME   READY  STATUS\ntrace32-xxx   1/1    Running\ntrace32-yyy   1/1    Running
+
+@enduml

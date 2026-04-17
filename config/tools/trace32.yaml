@@ -50,6 +50,18 @@ dependencies:
   linux:
     - build-essential
     - git
+    - curl
+    - gdb
+    - lldb
+
+python_dependencies:
+  - pydantic
+  - fastapi
+  - uvicorn
+  - paramiko
+  - pyserial
+    - build-essential
+    - git
     - gdb
     - python3
     - libssl-dev

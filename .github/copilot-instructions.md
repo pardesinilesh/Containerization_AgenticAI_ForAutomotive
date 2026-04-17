@@ -1,6 +1,6 @@
 # Agentic AI Containerization Platform
 
-This workspace contains an intelligent agent system for building and deploying scalable Docker containers in Kubernetes environments, designed for Automotive development tools like Trace32 (Lauterbach).
+This workspace contains an intelligent agent system for building and deploying scalable Docker containers in Kubernetes environments, designed for Automotive development tools like Trace32 (Lauterbach) and CANoe (Vector).
 
 ## Project Overview
 - **Core Framework**: Python-based agentic orchestration with LLM capabilities
@@ -15,8 +15,8 @@ This workspace contains an intelligent agent system for building and deploying s
 3. **Kubernetes Manifests** (`kubernetes/`) - Deployment configs
 4. **Argo CD** (`argo-cd/`) - GitOps deployment automation
 5. **Database** (`database/`) - Argo DB + PostgreSQL schemas
-6. **Templates** (`templates/`) - Reusable Dockerfile templates
-7. **Configuration** (`config/`) - Environment and tool configs
+6. **Templates** (`templates/`) - Reusable Dockerfile templates (Trace32, CANoe, etc.)
+7. **Configuration** (`config/`) - Environment and tool configs for all supported tools
 
 ## Development Setup
 
@@ -43,8 +43,11 @@ python scripts/init_db.py
 
 ### Building a Docker Image
 ```bash
-# Start the agent
+# Build Trace32 (Lauterbach) container
 python -m agent.orchestrator --action build --tool trace32 --target windows
+
+# Build CANoe (Vector) container
+python -m agent.orchestrator --action build --tool canoe --target linux
 
 # View build status
 python -m agent.cli status --build-id <build-id>
@@ -52,17 +55,26 @@ python -m agent.cli status --build-id <build-id>
 
 ### Deploying with Argo CD
 ```bash
-# Deploy application
+# Deploy Trace32
 python scripts/deploy.py --tool trace32 --env production
 
-# Monitor deployment
+# Deploy CANoe
+python scripts/deploy.py --tool canoe --env production
+
+# Monitor deployments
 argocd app get automotive-trace32
+argocd app get automotive-canoe
 ```
+
+## Supported Tools
+- **Trace32 (Lauterbach)** - Professional debugging and trace tool
+- **CANoe (Vector)** - CAN network analysis and simulation tool
 
 ## File Structure
 - `agent/orchestrator.py` - Main agent orchestration engine
 - `builders/dockerfile_generator.py` - Dynamic Dockerfile generation
-- `builders/templates/` - Base Docker templates
+- `builders/templates/` - Base Docker templates (trace32_*, canoe_*)
+- `config/tools/` - Tool-specific configurations (trace32.yaml, canoe.yaml)
 - `kubernetes/` - K8s manifests (Deployments, Services, ConfigMaps)
 - `argo-cd/` - Argo CD applications and sync policies
 - `database/` - Database schemas and migrations

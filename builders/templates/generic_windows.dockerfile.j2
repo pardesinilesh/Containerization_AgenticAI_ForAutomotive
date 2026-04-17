@@ -1,0 +1,93 @@
+# {{ tool_config.display_name }} - Automotive Development Tool
+# Generic Windows Dockerfile Template
+# Version: {{ version }}
+
+FROM {{ tool_config.docker.base_images.windows }} as base
+
+LABEL tool="{{ tool_config.name }}" \
+      vendor="{{ tool_config.vendor }}" \
+      version="{{ version }}" \
+      description="{{ tool_config.description }}" \
+      maintainer="Automotive Development Team"
+
+# Set working directory
+WORKDIR /app/{{ tool_config.name }}
+
+# Install required dependencies
+RUN powershell -Command \
+    $ErrorActionPreference = 'Stop'; \
+    # Install Chocolatey \
+    iex ((New-Object System.Net.ServicePointManager).ServerCertificateValidationCallback = {$true}); \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); \
+    # Install dependencies \
+{% for dep in tool_config.dependencies.windows %}
+    choco install -y {{ dep }}; \
+{% endfor %}
+    rm -Force C:\ProgramData\chocolatey\logs\*
+
+# Create directory structure
+RUN powershell -Command \
+    mkdir -Force C:\app\{{ tool_config.name }}\config | Out-Null; \
+    mkdir -Force C:\app\{{ tool_config.name }}\data | Out-Null; \
+    mkdir -Force C:\app\{{ tool_config.name }}\logs | Out-Null; \
+    mkdir -Force C:\app\{{ tool_config.name }}\projects | Out-Null
+
+# Set environment variables
+{% for key, value in tool_config.environment_variables.items() %}
+ENV {{ key }}="{{ value }}"
+{% endfor %}
+
+# Copy configuration files if they exist
+COPY config/ C:\app\{{ tool_config.name }}\config\
+
+{% if tool_config.health_check.enabled %}
+# Health check
+HEALTHCHECK --interval={{ tool_config.health_check.interval|replace('s', '') }}s --timeout={{ tool_config.health_check.timeout|replace('s', '') }}s --retries={{ tool_config.health_check.retries }} \
+    CMD powershell -Command \
+    $response = Invoke-WebRequest http://localhost:{{ tool_config.docker.ports[0] if tool_config.docker.ports }}/health -ErrorAction SilentlyContinue; \
+    if ($response.StatusCode -eq 200) { exit 0 } else { exit 1 }
+
+{% endif %}
+# Create startup script
+RUN powershell -Command \
+    $startupScript = @' \
+#!/usr/bin/env python \
+import os \
+import sys \
+import time \
+from pathlib import Path \
+ \
+def main(): \
+    tool_home = os.environ.get('{{ tool_config.name|upper }}_HOME', 'C:\\\\app\\\\{{ tool_config.name }}') \
+    config_path = os.environ.get('{{ tool_config.name|upper }}_CONFIG_PATH', f'{tool_home}\\\\config') \
+    data_path = os.environ.get('{{ tool_config.name|upper }}_DATA_PATH', f'{tool_home}\\\\data') \
+    \
+    print(f'[{{ tool_config.name|upper }}] Starting {{ tool_config.display_name }} service...') \
+    print(f'[{{ tool_config.name|upper }}] Home: {tool_home}') \
+    print(f'[{{ tool_config.name|upper }}] Config: {config_path}') \
+    print(f'[{{ tool_config.name|upper }}] Data: {data_path}') \
+    \
+    print('[{{ tool_config.name|upper }}] {{ tool_config.display_name }} initialized successfully') \
+    print('[{{ tool_config.name|upper }}] Listening on port {{ tool_config.docker.ports[0] if tool_config.docker.ports }}') \
+    \
+    # Keep container running \
+    try: \
+        while True: \
+            time.sleep(1) \
+    except KeyboardInterrupt: \
+        print('[{{ tool_config.name|upper }}] {{ tool_config.display_name }} stopped') \
+        sys.exit(0) \
+ \
+if __name__ == '__main__': \
+    main() \
+'@; \
+    $startupScript | Out-File -FilePath C:\app\{{ tool_config.name }}\start.py -Encoding UTF8
+
+WORKDIR C:\app\{{ tool_config.name }}
+
+# Expose ports
+EXPOSE {% for port in tool_config.docker.ports %}{{ port }} {% endfor %}
+
+# Start service
+CMD ["python", "start.py"]

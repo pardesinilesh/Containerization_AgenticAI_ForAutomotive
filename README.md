@@ -2,11 +2,12 @@
 
 ## Overview
 
-This is a comprehensive platform for building, deploying, and managing scalable Docker containers using an intelligent agent system. Designed for Automotive development tools like **Trace32 (Lauterbach)**, with extensibility for other tools.
+This is a comprehensive platform for building, deploying, and managing scalable Docker containers using an intelligent agent system. Designed for Automotive development tools like **Trace32 (Lauterbach)** and **CANoe (Vector)**, with extensibility for other tools.
 
 ### Key Features
 
 ✅ **Agentic AI Orchestration** - LLM-powered agent for intelligent container management  
+✅ **Generic Dockerfile Architecture** - Configuration-driven Dockerfiles using Jinja2 templates  
 ✅ **Multi-Platform Support** - Windows and Linux Docker images  
 ✅ **Kubernetes Native** - Full K8s integration with scaling policies  
 ✅ **Argo CD GitOps** - Declarative deployment automation  

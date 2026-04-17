@@ -61,7 +61,14 @@ dependencies:
     - curl
     - libpq-dev
 
-health_check:
+python_dependencies:
+  - can
+  - python-can
+  - cantools
+  - pydantic
+  - fastapi
+  - uvicorn
+  - psycopg2-binary
   enabled: true
   interval: "30s"
   timeout: "10s"

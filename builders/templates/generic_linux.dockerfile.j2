@@ -1,0 +1,123 @@
+# {{ tool_config.display_name }} - Automotive Development Tool
+# Generic Linux Dockerfile Template
+# Version: {{ version }}
+
+FROM {{ tool_config.docker.base_images.linux }}
+
+LABEL tool="{{ tool_config.name }}" \
+      vendor="{{ tool_config.vendor }}" \
+      version="{{ version }}" \
+      description="{{ tool_config.description }}" \
+      maintainer="Automotive Development Team"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+{% for dep in tool_config.dependencies.linux %}
+    {{ dep }} \
+{% endfor %}
+    && rm -rf /var/lib/apt/lists/*
+
+# Create application directory structure
+RUN mkdir -p /app/{{ tool_config.name }}/{config,data,logs,projects}
+
+WORKDIR /app/{{ tool_config.name }}
+
+# Set environment variables
+{% for key, value in tool_config.environment_variables.items() %}
+ENV {{ key }}="{{ value }}" \
+{% endfor %}
+    PATH="/app/{{ tool_config.name }}/bin:$PATH"
+
+# Install Python dependencies if specified
+{% if tool_config.python_dependencies is defined and tool_config.python_dependencies|length > 0 %}
+RUN pip3 install --no-cache-dir \
+{% for dep in tool_config.python_dependencies %}
+    {{ dep }} \
+{% endfor %}
+
+{% endif %}
+# Copy configuration files if they exist
+COPY config/ /app/{{ tool_config.name }}/config/
+
+# Create startup script
+RUN cat > /app/{{ tool_config.name }}/start.sh << 'EOF' \
+#!/bin/bash \
+set -e \
+ \
+echo "[{{ tool_config.name|upper }}] Starting {{ tool_config.display_name }} service..." \
+echo "[{{ tool_config.name|upper }}] Home: ${{ tool_config.name|upper }}_HOME" \
+echo "[{{ tool_config.name|upper }}] Config: ${{ tool_config.name|upper }}_CONFIG_PATH" \
+echo "[{{ tool_config.name|upper }}] Data: ${{ tool_config.name|upper }}_DATA_PATH" \
+ \
+# Create necessary directories \
+mkdir -p "${{ tool_config.name|upper }}_HOME"/{config,data,logs,projects} \
+ \
+# Execute startup Python script if exists \
+if [ -f /app/{{ tool_config.name }}/start.py ]; then \
+    python3 /app/{{ tool_config.name }}/start.py \
+else \
+    echo "[{{ tool_config.name|upper }}] No startup script found, keeping container running..." \
+    while true; do sleep 1; done \
+fi \
+EOF
+
+# Create Python startup script
+RUN cat > /app/{{ tool_config.name }}/start.py << 'EOF' \
+#!/usr/bin/env python3 \
+import os \
+import sys \
+import time \
+from pathlib import Path \
+ \
+def initialize_service(): \
+    """Initialize {{ tool_config.display_name }} service""" \
+    tool_home = os.environ.get('{{ tool_config.name|upper }}_HOME', '/app/{{ tool_config.name }}') \
+    config_path = os.environ.get('{{ tool_config.name|upper }}_CONFIG_PATH', f'{tool_home}/config') \
+    data_path = os.environ.get('{{ tool_config.name|upper }}_DATA_PATH', f'{tool_home}/data') \
+    \
+    print(f'[{{ tool_config.name|upper }}] Home directory: {tool_home}') \
+    print(f'[{{ tool_config.name|upper }}] Config path: {config_path}') \
+    print(f'[{{ tool_config.name|upper }}] Data path: {data_path}') \
+    \
+    # Ensure directories exist \
+    Path(config_path).mkdir(parents=True, exist_ok=True) \
+    Path(data_path).mkdir(parents=True, exist_ok=True) \
+    \
+    print('[{{ tool_config.name|upper }}] {{ tool_config.display_name }} initialized successfully') \
+    print('[{{ tool_config.name|upper }}] Listening on port {{ tool_config.docker.ports[0] if tool_config.docker.ports }}') \
+    \
+    # Keep service running \
+    try: \
+        while True: \
+            time.sleep(1) \
+    except KeyboardInterrupt: \
+        print('[{{ tool_config.name|upper }}] {{ tool_config.display_name }} stopped') \
+        sys.exit(0) \
+ \
+if __name__ == '__main__': \
+    initialize_service() \
+EOF
+
+# Make scripts executable
+RUN chmod +x /app/{{ tool_config.name }}/start.sh /app/{{ tool_config.name }}/start.py
+
+{% if tool_config.health_check.enabled %}
+# Health check
+HEALTHCHECK --interval={{ tool_config.health_check.interval }} \
+    --timeout={{ tool_config.health_check.timeout }} \
+    --retries={{ tool_config.health_check.retries }} \
+    CMD curl -f http://localhost:{{ tool_config.docker.ports[0] if tool_config.docker.ports }}/health || exit 1
+
+{% endif %}
+# Expose ports
+{% if tool_config.docker.ports %}
+EXPOSE {% for port in tool_config.docker.ports %}{{ port }} {% endfor %}
+
+{% endif %}
+WORKDIR /app/{{ tool_config.name }}
+
+# Start service
+ENTRYPOINT ["/app/{{ tool_config.name }}/start.sh"]
+CMD []

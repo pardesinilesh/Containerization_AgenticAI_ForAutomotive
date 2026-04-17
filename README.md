@@ -7,6 +7,7 @@ This is a comprehensive platform for building, deploying, and managing scalable 
 ### Key Features
 
 ✅ **Agentic AI Orchestration** - LLM-powered agent for intelligent container management  
+✅ **Generic Dockerfile Architecture** - Configuration-driven Dockerfiles using Jinja2 templates  
 ✅ **Multi-Platform Support** - Windows and Linux Docker images  
 ✅ **Kubernetes Native** - Full K8s integration with scaling policies  
 ✅ **Argo CD GitOps** - Declarative deployment automation  
